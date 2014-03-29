@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>RPG</title>
+	<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+
+	<style>
+		#container {
+			width: 100%;
+			height: 100%;
+		}
+
+		#text {
+			float: left;
+		}
+
+		#textWindow {
+			padding: 1em;
+			background: #CCCCCC;
+			margin-bottom: 1em;
+			max-height: 500px;
+			width: 450px;
+			overflow: auto;
+		}
+
+		#gameWindow {
+			padding: 1em;
+			float: right;
+			background: #CCCCCC;
+		}
+
+		#gameForm {
+			display: none;
+		}
+
+		#gameInput {
+			display: none;
+		}
+
+		#cmd {
+			display: none;
+		}
+
+		#cmdWindow {
+			display: none;
+			padding: 1em;
+			background: #444245;
+			margin-top: 1em;
+			height: 150px;
+			width: 250px;
+			overflow: auto;
+			color: #C48CED;
+			font-weight: bold;
+		}
+
+
+	</style>
+
+</head>
+<body>
+	<div id="container">
+		<div id="text">
+			<div id="textWindow">
+				<p>>>>>>>>>>>>>>>>>>>>>>>>>></p>
+				<p>Welcome, fill out the form to the right</p>
+				<p>>>>>>>>>>>>>>>>>>>>>>>>>></p>
+			</div>
+			<input type="text" id="gameInput" />
+			<button type="button" id="cmd">Command</button>
+		</div>
+		
+		<div id="gameWindow">
+
+			<form id="startForm">
+				<table class="formTable">
+					<tr>
+						<td>Name: </td>
+						<td><input type="text" name="name" id="nameInput" autocomplete="off" /></td>
+					</tr>
+					<tr>
+						<td>Email: </td>
+						<td><input type="text" name="email" id="emailInput" autocomplete="off" /></td>
+					</tr>					
+					<tr>
+						<td>Health: </td>
+						<td><input type="number" name="health" id="healthInput"  /></td>
+					</tr>
+					<tr>
+						<td>Mana: </td>
+						<td><div id="calcMana"></div></td>
+					</tr>
+					<tr>
+						<td>Class points: </td>
+						<td>
+							<input type="radio" name="class" value="power" id="powerRadio" />Power
+							<input type="radio" name="class" value="magic" id="magicRadio" />Magic
+							<input type="radio" name="class" value="hybrid" id="hybridRadio" />Hybrid
+						</td>
+					</tr>
+				</table>
+				<button type="button" id="startFormButton">Submit</button>
+			</form>
+			<form id="gameForm">
+				<table class="formTable">
+					<tr>
+						<td colspan='3' id="nameCell"></td>
+					</tr>
+					<tr>
+						<td id="hpCell"></td>
+						<td colspan='2' id="mpCell"></td>
+					</tr>
+					<tr>
+						<td colspan='3' id="bpCell"></td>
+					</tr>
+					<tr>
+						<td id="levelCell"></td>
+						<td colspan='2' id="moneyCell"></td>
+					</tr>
+				</table>
+			</form>
+		</div>
+		<div style="clear: both;"></div>
+
+		<div id="cmdWindow"><span style='color: #00ff00;'>Past Commands</span><br/><div id="cmds"></div></div>
+	</div>
+</body>
+<script>
+/* GLOBALS */
+var population = 0,
+	itemcount = 0;
+var pc = new Player(0);
+
+/*CLASSES*/
+function Item(id) {
+	this.id = id;
+
+	this.price = 0;
+	this.name = "";
+	this.hp = 0;
+	this.mp = 0;
+	this.bp = 0;
+	this.power = 0;
+	this.magic = 0;
+	this.adef = 0;
+	this.mdef = 0;
+	this.level = 0;
+}
+
+function World(id) {
+    this.id = id;
+
+    this.isTown = false;
+    this.npcs = []; // Player[]
+    this.weather = '';
+    this.name = "";
+    //this.treasures = [] // Item[]
+}
+	
+function Player(id) {
+	this.id = id;
+	
+	this.name = "";
+	this.level = 1;
+	this.hp = 0;
+	this.mp = 0;
+	this.bp = 0;
+	this.power = 0;
+	this.magic = 0;
+	this.adef = 0;
+	this.mdef = 0;
+	this.isFriendly = false;
+	this.money = 0;
+	this.carry = []; // Item[]
+	this.dialog = []; // String[]
+}
+
+/* TEST GLOBALS */
+var gridSize = 25;	
+var worlds = new Array(gridSize);
+
+/* TEST CODE */
+for(var i = 0;i < gridSize; i++) {
+	worlds[i] = new Array(gridSize);
+}
+
+for(var i = 0; i < gridSize; i++) {
+	for(var j = 0;j < gridSize;j++) {
+		//populate worlds[][] with World objects
+		worlds[i][j] = new World(i*gridSize + j);
+	}
+}
+
+worlds[0][0].name = "Home";
+worlds[0][0].isTown = true;
+
+var testItem = new Item(itemcount);
+itemcount++;
+testItem.hp = 25;
+testItem.price = 50;
+testItem.name = "Small Potion";
+
+var mother = new Player(population);
+population++;
+mother.name = "Mother";
+mother.isFriendly = true;
+mother.carry.push(testItem);
+mother.carry.push(testItem);
+worlds[0][0].npcs.push(mother);
+
+worlds[0][1] = new World(1);
+
+var creep = new Player(population);
+population++;
+creep.name = "Bat";
+creep.level = 1;
+creep.carry.push(testItem);
+creep.money = 10;
+creep.hp = 50;
+creep.mp = 20;
+creep.bp = 0;
+creep.power = 1;
+creep.magic = 1;
+creep.adef = 0;
+creep.mdef = 0;
+
+worlds[0][1].npcs.push(creep);
+worlds[0][1].weather = "dry";
+
+/*FORM HANDLING*/
+var name="";
+var email="";
+var health=0;
+var mana=0;
+var cp="";
+var level=0, hp=0,bp=0;
+
+$(function() {
+	/*ON READY VARIABLES*/
+	var currWorld,
+		cmds = []; // start at home
+
+	/*FUNCTIONS*/
+	function com(s) {  // ADDS THE BREAK!!
+		$("#textWindow").append(s+"<br/>");
+	}
+
+	/*
+		move(world): move to this world
+			and update game
+	*/
+	function move(world) {
+		if(currWorld !== world) {
+			currWorld = world;
+			com("Welcome to "+ currWorld.name);
+		} else {
+			com("You are already in "+currWorld.name);
+		}
+	}
+
+	function addcmd(s) {
+		cmds.push(s);
+		// TODO: add anchor tag to click on command and run it
+		$("#cmds").prepend(s+"<br/>");
+	}
+
+
+	/*
+		handles each command input
+	*/
+	$("#cmd").click(function() {
+		var input = $("#gameInput").val(); 	// get val
+		addcmd(input);
+		$("#gameInput").val("");			// clear val
+		words = input.split(" ");
+		if(!words[0]) {
+			console.log("");
+			return;
+		}
+		switch(words[0].toLowerCase()) {
+			case "go": // move()
+				if(!words[1]) {
+					console.log("");
+					return;
+				}
+				switch(words[1].toLowerCase()) {
+					case "north": // go north
+						pc.y = (pc.y + 1) % gridSize;
+						move(worlds[pc.x][pc.y]);
+						break;
+					case "south":
+						pc.y = (pc.y - 1) % gridSize;
+						move(worlds[pc.x][pc.y]);
+						break;
+					case "east":
+						pc.x = (pc.x + 1) % gridSize;
+						move(worlds[pc.x][pc.y]);
+						break;
+					case "west":
+						pc.x = (pc.x - 1) % gridSize;
+						move(worlds[pc.x][pc.y]);
+						break;
+					case "to": // go to x,y
+						if(!words[2]) {
+							console.log("");
+							return;
+						}
+						var coord = words[2].split(","); // coord = [x, y]
+						if(coord[0] < gridSize && coord[1] < gridSize) {
+							pc.x = coord[0];
+							pc.y = coord[1];
+							move(worlds[pc.x][pc.y]);
+						} else {
+							// error
+							console.log("coordinate processing error");
+						}
+						break;
+					default:
+						console.log("go needs second argument");
+				}
+				 // caution
+				break;
+			case "list":
+				if(!words[1]) {
+					console.log("");
+					return;
+				}
+				switch(words[1].toLowerCase()) {
+					case "items":
+						console.log("TODO: list items");
+						if(!pc.carry.length) {
+							com(">You aren't carrying anything");
+						} else {
+							for(var i=0; i<pc.carry.length; i++) {
+								com(">"+pc.carry[i].name);
+							}
+						}
+						break;
+					case "places":
+						console.log("TODO: list known worlds");
+						for(var i=0; i<gridSize;i++) {
+							for(var j=0; j<gridSize;j++) {
+								if(worlds[i][j].name.length>0) {
+									com(">"+worlds[i][j].name);
+								}	
+							}
+						}
+						break;
+					case "npcs":
+						if(!words[2]) {
+							for(var i=0;i<worlds[pc.x][pc.y].npcs.length;i++) {
+								com(">"+worlds[pc.x][pc.y].npcs[i].name);
+							}							
+						} else {
+							switch(words[2].toLowerCase()) {
+								case "items":
+									for(var i=0; i<worlds[pc.x][pc.y].npcs.length;i++) {
+										com(">"+worlds[pc.x][pc.y].npcs[i].name+": ");
+										for(var j=0; j<worlds[pc.x][pc.y].npcs[i].carry.length;j++) {
+											com(">>"+worlds[pc.x][pc.y].npcs[i].carry[j].name+" --- "+worlds[pc.x][pc.y].npcs[i].carry[j].price+" gold");	
+										}
+										
+									}
+									break;
+							}
+						}
+						//TODO: add list npcs items (mother)
+						break;
+				}	
+				break;
+			case "speak":
+				if(!words[1]) {
+					return;
+				}
+				switch(words[1].toLowerCase()) {
+					case "to":
+					case "with":
+						if(!words[2]) {
+							console.log("who are you trying to speak with?");
+							return;
+						}
+						var found = false;
+						for(var i=0; i<worlds[pc.x][pc.y].npcs.length; i++) {
+							if(worlds[pc.x][pc.y].npcs[i].name === words[2]) {
+								found = true;
+							}
+						}
+						if(found) {
+							// speak with person code here
+						} else {
+							console.log("person not found in this area");
+						}
+						break;
+					default:
+						console.log("speak should be followed by to/with");
+				}
+				break;
+			default:
+				// error
+		}
+	});
+
+	/* 	
+		initial character set up form, 
+		handles health/mana calculation 
+	*/
+	$('#healthInput').keyup(function() {
+		var health = $(this).val();
+		if(health <= 300) {
+			var i = 300 - health;
+			$('#calcMana').html(i);
+		} else {
+			$('#calcMana').html("0");
+		}
+	});
+
+	/*
+		handles the initial form and sets up the 
+		player and world
+	*/
+	$('#startFormButton').click(function() {
+		//get elements here and set variables
+		name = $("#nameInput").val();
+		email= $("#emailInput").val();
+		health = $("#healthInput").val();
+		mana = 300 - health;
+		
+		if($("#powerRadio").prop("checked", true)) {
+			cp = "power";
+		} else if($("#magicRadio").prop("checked", true)) {
+			cp = "magic";
+		} else {
+			cp = "hybrid";
+		}
+		$("#startForm").hide();
+	
+		pc.name = name;	
+		population++;
+		pc.isFriendly = true;
+		pc.hp = health;
+		pc.mp = mana;
+		switch(cp) {
+			case "power":
+				pc.power = 2;
+				break;
+			case "magic":
+				pc.magic = 2;
+				break;
+			case "hybrid":
+				pc.power = 1;
+				pc.magic = 1;
+				break;
+		}
+		pc.adef = 5;
+		pc.mdef = 5;
+		pc.x = 0;
+		pc.y = 0;
+		pc.money = 500;
+
+		$("#nameCell").html("Name: " + pc.name);
+		$("#hpCell").html("HP: " + pc.hp);
+		$("#mpCell").html("MP: " + pc.mp);
+		$("#levelCell").html("Level: " + pc.level);
+		$("#bpCell").html("BP: " + pc.bp);
+		$("#moneyCell").html("Money: " + pc.money + " gold");
+
+		$("#gameForm").show();
+		$("#gameInput").show();
+		$("#cmd").show();
+		$("#cmdWindow").show();
+
+		$("#textWindow").html("Welcome to RPG</br>");
+		com("You find "+ pc.money +" gold on the ground");
+		move(worlds[pc.x][pc.y]); // place player at home
+
+	});
+
+});
+</script>
+</html>
