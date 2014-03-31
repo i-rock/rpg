@@ -20,7 +20,7 @@
 			background: #CCCCCC;
 			margin-bottom: 1em;
 			max-height: 500px;
-			width: 450px;
+			width: 425px;
 			overflow: auto;
 		}
 
@@ -236,8 +236,15 @@ var cp="";
 var level=0, hp=0,bp=0;
 
 $(function() {
-	/*ON READY VARIABLES*/
-	var currWorld,
+	/*
+	ON READY VARIABLES
+	
+		currWorld is actually pretty important. It holds
+		the current world which dictates the scope/state 
+		of (the users current ability to interact through
+		commands with) the game.
+	*/
+	var currWorld, 
 		cmds = []; // start at home
 
 	/*FUNCTIONS*/
@@ -250,9 +257,9 @@ $(function() {
 			and update game
 	*/
 	function move(world) {
-		if(currWorld !== world) {
+		if(currWorld != world) {
 			currWorld = world;
-			com("Welcome to "+ currWorld.name);
+			com("Welcome to "+currWorld.name);
 		} else {
 			com("You are already in "+currWorld.name);
 		}
@@ -272,131 +279,31 @@ $(function() {
 		var input = $("#gameInput").val(); 	// get val
 		addcmd(input);
 		$("#gameInput").val("");			// clear val
-		words = input.split(" ");
-		if(!words[0]) {
-			console.log("");
+		words = input.toLowerCase().split(" ");
+		if(words.length === 0) {
+			console.log("no words");
 			return;
 		}
-		switch(words[0].toLowerCase()) {
-			case "go": // move()
-				if(!words[1]) {
-					console.log("");
-					return;
-				}
-				switch(words[1].toLowerCase()) {
-					case "north": // go north
-						pc.y = (pc.y + 1) % gridSize;
-						move(worlds[pc.x][pc.y]);
-						break;
-					case "south":
-						pc.y = (pc.y - 1) % gridSize;
-						move(worlds[pc.x][pc.y]);
-						break;
-					case "east":
-						pc.x = (pc.x + 1) % gridSize;
-						move(worlds[pc.x][pc.y]);
-						break;
-					case "west":
-						pc.x = (pc.x - 1) % gridSize;
-						move(worlds[pc.x][pc.y]);
-						break;
-					case "to": // go to x,y
-						if(!words[2]) {
-							console.log("");
-							return;
-						}
-						var coord = words[2].split(","); // coord = [x, y]
-						if(coord[0] < gridSize && coord[1] < gridSize) {
-							pc.x = coord[0];
-							pc.y = coord[1];
-							move(worlds[pc.x][pc.y]);
-						} else {
-							// error
-							console.log("coordinate processing error");
-						}
-						break;
-					default:
-						console.log("go needs second argument");
-				}
-				 // caution
-				break;
+		
+		switch(words[0]) {
+			case "go":
 			case "list":
-				if(!words[1]) {
-					console.log("");
-					return;
-				}
-				switch(words[1].toLowerCase()) {
-					case "items":
-						console.log("TODO: list items");
-						if(!pc.carry.length) {
-							com(">You aren't carrying anything");
-						} else {
-							for(var i=0; i<pc.carry.length; i++) {
-								com(">"+pc.carry[i].name);
-							}
-						}
-						break;
-					case "places":
-						console.log("TODO: list known worlds");
-						for(var i=0; i<gridSize;i++) {
-							for(var j=0; j<gridSize;j++) {
-								if(worlds[i][j].name.length>0) {
-									com(">"+worlds[i][j].name);
-								}	
-							}
-						}
-						break;
-					case "npcs":
-						if(!words[2]) {
-							for(var i=0;i<worlds[pc.x][pc.y].npcs.length;i++) {
-								com(">"+worlds[pc.x][pc.y].npcs[i].name);
-							}							
-						} else {
-							switch(words[2].toLowerCase()) {
-								case "items":
-									for(var i=0; i<worlds[pc.x][pc.y].npcs.length;i++) {
-										com(">"+worlds[pc.x][pc.y].npcs[i].name+": ");
-										for(var j=0; j<worlds[pc.x][pc.y].npcs[i].carry.length;j++) {
-											com(">>"+worlds[pc.x][pc.y].npcs[i].carry[j].name+" --- "+worlds[pc.x][pc.y].npcs[i].carry[j].price+" gold");	
-										}
-										
-									}
-									break;
-							}
-						}
-						//TODO: add list npcs items (mother)
-						break;
-				}	
-				break;
 			case "speak":
-				if(!words[1]) {
+				if(words.length < 2) {
+					console.log("not enough args");
+					return;
+				} 
+				dictionary[words[0]][words[1]]();
+				break;
+			/*case "give":
+				if(words.length < 2) {
+					console.log("not enough args");
 					return;
 				}
-				switch(words[1].toLowerCase()) {
-					case "to":
-					case "with":
-						if(!words[2]) {
-							console.log("who are you trying to speak with?");
-							return;
-						}
-						var found = false;
-						for(var i=0; i<worlds[pc.x][pc.y].npcs.length; i++) {
-							if(worlds[pc.x][pc.y].npcs[i].name === words[2]) {
-								found = true;
-							}
-						}
-						if(found) {
-							// speak with person code here
-						} else {
-							console.log("person not found in this area");
-						}
-						break;
-					default:
-						console.log("speak should be followed by to/with");
-				}
-				break;
+				dictionary.give();
+				break;*/
 			default:
-				// error
+				console.log("no such command");
 		}
 	});
 
@@ -475,6 +382,114 @@ $(function() {
 
 	});
 
+	dictionary = {
+		go: {
+			north: function() {
+				pc.y = (pc.y + 1) % gridSize;
+				move(worlds[pc.x][pc.y]);			
+			},
+			south: function() {
+				pc.y = (pc.y - 1) % gridSize;
+				move(worlds[pc.x][pc.y]);			
+			},
+			east: function() {
+				pc.x = (pc.x + 1) % gridSize;
+				move(worlds[pc.x][pc.y]);
+			},
+			west: function() {
+				pc.x = (pc.x - 1) % gridSize;
+				move(worlds[pc.x][pc.y]);
+			},
+			to: function() {
+				if(words.length < 3) {
+					console.log("not enough arguments");
+					return;
+				}
+				var coord = words[2].split(","); // coord = [x, y]
+				if(coord[0] < gridSize && coord[1] < gridSize) {
+					pc.x = coord[0];
+					pc.y = coord[1];
+					move(worlds[pc.x][pc.y]);
+				} else {
+					// error
+					console.log("coordinate processing error");
+				}		
+			}
+		},
+		list: {
+			carry: function() {
+				var index=-1;
+				var arg="";
+				
+				for(var i=2; i<words.length; i++) {
+					arg+=words[i]+" ";
+				}
+				arg = arg.trim();
+				for(var i=0; i<currWorld.npcs.length; i++) {
+					if(currWorld.npcs[i].name.toLowerCase() === arg) {
+						index = i;
+						break;
+					}
+				}
+				console.log(arg);
+				console.log(index);
+				if(words.length > 2 && index != -1) {
+					com(">"+currWorld.npcs[index].name);
+					for(var i=0; i<currWorld.npcs[index].carry.length; i++) {
+						com(">>"+currWorld.npcs[index].carry[i].name);
+					}
+				} else if(!pc.carry.length) {
+						com(">You aren't carrying anything");
+				} else {
+					for(var i=0; i<pc.carry.length; i++) {
+						com(">"+pc.carry[i].name);
+					}
+				}
+			},
+			places: function() {
+				for(var i=0; i<gridSize;i++) {
+					for(var j=0; j<gridSize;j++) {
+						if(worlds[i][j].name.length>0) {
+							com(">"+worlds[i][j].name);
+						}	
+					}
+				}
+			},	
+			npcs: function() {
+				if(words.length === 2) {
+					var friendlies=0;
+					for(var i=0;i<currWorld.npcs.length;i++) {
+						if(currWorld.npcs[i].isFriendly) {
+							com(">"+currWorld.npcs[i].name);
+							friendlies++;
+						}
+					}	
+					if(!friendlies) {
+						com(">No friendlies in the area");
+					}						
+				} else {
+					switch(words[2].toLowerCase()) {
+						case "items":
+							for(var i=0; i<currWorld.npcs.length;i++) {
+								com(">"+currWorld.npcs[i].name+": ");
+								for(var j=0; j<currWorld.npcs[i].carry.length;j++) {
+									com(">>"+currWorld.npcs[i].carry[j].name+" --- "+currWorld.npcs[i].carry[j].price+" gold");	
+								}
+								
+							}
+							break;
+						default:
+							console.log("i don't know man something went wrong");
+					}
+				}
+			}		
+		}
+	}
 });
+
+/*
+TODO
+*/
+
 </script>
 </html>
